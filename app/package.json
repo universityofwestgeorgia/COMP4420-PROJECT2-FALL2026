@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "build": "node --check app.js"
+    "build": "node --check app.js && node --check project-validation.js",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
