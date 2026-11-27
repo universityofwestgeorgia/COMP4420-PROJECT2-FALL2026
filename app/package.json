@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "build": "node --check app.js && node --check project-validation.js",
+    "build": "node --check app.js && node --check project-validation.js && node --check project-store.js",
     "test": "node --test"
   },
   "keywords": [],
@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "ejs": "^3.1.10",
-    "express": "^4.16.4"
+    "express": "^4.16.4",
+    "sqlite3": "^6.0.1"
   }
 }
