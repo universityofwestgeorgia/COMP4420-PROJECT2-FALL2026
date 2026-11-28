@@ -1,19 +1,43 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Comp 4420 Landing Page</title>
-    <meta name="description" content="Landing Page for Comp 4420">
-    <meta name="author" content="Comp 4420">
-    <!-- Bootstrap CSS Reset -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" rel="stylesheet">
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Endpoint Monitor — Projects</title>
+	<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" rel="stylesheet">
 </head>
-
 <body>
-    <div class="container">
-        <h1>Welcome</h1>
-    </div>
-</body>
+	<main class="container py-5">
+		<h1>Endpoint Monitor</h1>
+		<p>Save a site to monitor its routes.</p>
 
+		<h2 class="h4 mt-4">Add a project</h2>
+		<% if (error) { %><div class="alert alert-danger" role="alert"><%= error %></div><% } %>
+		<form action="/projects" method="post" class="mb-5">
+			<div class="form-group">
+				<label for="name">Project name</label>
+				<input id="name" name="name" class="form-control" maxlength="80" required>
+			</div>
+			<div class="form-group">
+				<label for="baseUrl">Base URL</label>
+				<input id="baseUrl" name="baseUrl" type="url" class="form-control" placeholder="https://example.com" required>
+			</div>
+			<button type="submit" class="btn btn-primary">Add project</button>
+		</form>
+
+		<h2 class="h4">Projects</h2>
+		<% if (projects.length === 0) { %>
+			<p>No projects saved yet.</p>
+		<% } else { %>
+			<ul class="list-group">
+				<% projects.forEach(function (project) { %>
+					<li class="list-group-item">
+						<a href="/projects/<%= project.id %>"><%= project.name %></a>
+						<span class="text-muted ml-2"><%= project.baseUrl %></span>
+					</li>
+				<% }); %>
+			</ul>
+		<% } %>
+	</main>
+</body>
 </html>
