@@ -2,10 +2,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const sqlite3 = require('sqlite3');
 const { validateProject } = require('./project-validation');
+const { validateRoute, RouteValidationError } = require('./route-validation');
 
 const listProjectsQuery = 'SELECT id, name, base_url AS baseUrl, created_at AS createdAt FROM projects ORDER BY id DESC';
 const getProjectQuery = 'SELECT id, name, base_url AS baseUrl, created_at AS createdAt FROM projects WHERE id = ?';
 const insertProjectQuery = 'INSERT INTO projects (name, base_url) VALUES (?, ?)';
+const listRoutesQuery = 'SELECT id, project_id AS projectId, path, expected_status AS expectedStatus, max_response_ms AS maxResponseMs, created_at AS createdAt FROM routes WHERE project_id = ? ORDER BY id';
+const insertRouteQuery = 'INSERT INTO routes (project_id, path, expected_status, max_response_ms) VALUES (?, ?, ?, ?)';
+const getRouteQuery = 'SELECT id, project_id AS projectId, path, expected_status AS expectedStatus, max_response_ms AS maxResponseMs, created_at AS createdAt FROM routes WHERE id = ?';
 
 /**
  * Opens the project database and creates its schema if necessary.
@@ -60,6 +64,34 @@ async function openProjectStore(databasePath = path.join(__dirname, 'data', 'mon
 		return getProject(id);
 	}
 
+	/** Returns the routes saved under one project, in creation order. */
+	function listRoutes(projectIdentifier) {
+		const projectId = Number(projectIdentifier);
+		if (!Number.isSafeInteger(projectId) || projectId < 1) return Promise.resolve([]);
+		return new Promise((resolve, reject) => {
+			db.all(listRoutesQuery, [projectId], (error, rows) => error ? reject(error) : resolve(rows));
+		});
+	}
+
+	/** Validates and saves a GET route under an existing project. */
+	async function addRoute(projectIdentifier, input) {
+		const project = await getProject(projectIdentifier);
+		if (!project) throw new RouteValidationError('Project not found.');
+		const existingRoutes = await listRoutes(project.id);
+		const route = validateRoute(input, existingRoutes);
+		const id = await new Promise((resolve, reject) => {
+			db.run(insertRouteQuery,
+				[project.id, route.path, route.expectedStatus, route.maxResponseMs],
+				function (error) {
+					if (error) reject(error);
+					else resolve(this.lastID);
+				});
+		});
+		return new Promise((resolve, reject) => {
+			db.get(getRouteQuery, [id], (error, row) => error ? reject(error) : resolve(row));
+		});
+	}
+
 	/** Closes the database after use. */
 	function close() {
 		return new Promise((resolve, reject) => {
@@ -67,7 +99,7 @@ async function openProjectStore(databasePath = path.join(__dirname, 'data', 'mon
 		});
 	}
 
-	return { listProjects, getProject, addProject, close };
+	return { listProjects, getProject, addProject, listRoutes, addRoute, close };
 }
 
 module.exports = { openProjectStore };

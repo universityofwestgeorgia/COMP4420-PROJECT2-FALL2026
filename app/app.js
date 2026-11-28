@@ -2,6 +2,7 @@ const path = require('node:path');
 const express = require('express');
 const { openProjectStore } = require('./project-store');
 const { ProjectValidationError } = require('./project-validation');
+const { RouteValidationError } = require('./route-validation');
 
 /** Creates the web routes using the supplied project store. */
 function createApp(store) {
@@ -39,9 +40,30 @@ function createApp(store) {
 		try {
 			const project = await store.getProject(req.params.id);
 			if (!project) return res.status(404).send('Project not found.');
-			res.render('page/project', { project });
+			res.render('page/project', { project, routes: await store.listRoutes(project.id), error: null });
 		} catch (error) {
 			next(error);
+		}
+	});
+
+	app.post('/projects/:id/routes', async function (req, res, next) {
+		try {
+			const project = await store.getProject(req.params.id);
+			if (!project) return res.status(404).send('Project not found.');
+			await store.addRoute(project.id, req.body);
+			res.redirect(`/projects/${project.id}`);
+		} catch (error) {
+			if (!(error instanceof RouteValidationError)) return next(error);
+			try {
+				const project = await store.getProject(req.params.id);
+				res.status(400).render('page/project', {
+					project,
+					routes: await store.listRoutes(project.id),
+					error: error.message
+				});
+			} catch (loadError) {
+				next(loadError);
+			}
 		}
 	});
 
